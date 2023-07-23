@@ -24,50 +24,39 @@ def select_stratified_groups(data, strat_columns, group_size, weights=None, seed
     control = pd.DataFrame(columns=strat_columns)
     if weights:
         for strat, weight in weights.items():
-            if isinstance(strat, str):
+            if isinstance(strat, (str, int, float)):
                 val_list = []
                 val_list += [strat]
             else:
                 val_list = list(strat)
-            #print(strat, weight, val_list)
             strat_df = data[data[strat_columns].isin(val_list).all(axis=1)].reset_index(drop=True)
-            ab_group_size = 2*group_size*weight
-            #print(len(strat_df), ab_group_size)
-            random_indexes_ab = np.random.choice([i for i in range(len(strat_df))], ab_group_size, False)
-            a_indexes = random_indexes_ab[:int(ab_group_size/2)]
-            b_indexes = random_indexes_ab[int(ab_group_size/2):]
+            ab_group_size = int(round(group_size * weight))
+            random_indexes_ab = np.random.choice([i for i in range(len(strat_df))], ab_group_size * 2, False)
+            a_indexes = random_indexes_ab[:ab_group_size]
+            b_indexes = random_indexes_ab[ab_group_size:]
             a_random_strata_df = strat_df.iloc[a_indexes,:]
             b_random_strata_df = strat_df.iloc[b_indexes,:]
-            #print(len(strat_df), len(a_random_strata_df), len(b_random_strata_df))
-                    
+  
             control = pd.concat([control, a_random_strata_df], ignore_index=True)
             pilot = pd.concat([pilot, b_random_strata_df], ignore_index=True)
-            #print(len(control), len(pilot))  
     else:
         strat_dict = data.groupby(strat_columns).count().iloc[:,0].to_dict()
-        #display(strat_dict)
-        len_data = len(df)
-        #print(len_data)
+        len_data = len(data)
         strat_dict_shares = {strata:share/len_data for (strata, share) in strat_dict.items()}
-        #display(strat_dict_shares)
         for strat, weight in strat_dict_shares.items():
-            if isinstance(strat, str):
+            if isinstance(strat, (str, int, float)):
                 val_list = []
                 val_list += [strat]
             else:
                 val_list = list(strat)
-            #print(strat, weight, val_list)
-            strat_df = df[df[strat_columns].isin(val_list).all(axis=1)].reset_index(drop=True)
-            ab_group_size = int(2*group_size*weight + 0.5)
-            #print(len(strat_df), ab_group_size)
-            random_indexes_ab = np.random.choice([i for i in range(len(strat_df))], ab_group_size, False)
-            a_indexes = random_indexes_ab[:int(ab_group_size/2)]
-            b_indexes = random_indexes_ab[int(ab_group_size/2):]
+            strat_df = data[data[strat_columns].isin(val_list).all(axis=1)].reset_index(drop=True)
+            ab_group_size = int(round(group_size * weight))
+            random_indexes_ab = np.random.choice([i for i in range(len(strat_df))], ab_group_size * 2, False)
+            a_indexes = random_indexes_ab[:ab_group_size]
+            b_indexes = random_indexes_ab[ab_group_size:]
             a_random_strata_df = strat_df.iloc[a_indexes,:]
             b_random_strata_df = strat_df.iloc[b_indexes,:]
-            #print(len(strat_df), len(a_random_strata_df), len(b_random_strata_df))
-                    
+   
             control = pd.concat([control, a_random_strata_df], ignore_index=True)
             pilot = pd.concat([pilot, b_random_strata_df], ignore_index=True)
-            #print(len(control), len(pilot))
-    return (pilot, control) 
+    return (pilot, control)
